@@ -49,8 +49,8 @@ Rules.
 \"([^\"]|\\\")*\"                                          : {token, {string, TokenLine, unquote(TokenChars)}}.
 \'([^\']|\\\')*\'                                          : {token, {string, TokenLine, unquote(TokenChars)}}.
 (0|{SIGN}?[1-9]{DIGIT}*)                                   : {token, {integer, TokenLine, list_to_integer(TokenChars)}}.
-\+\+                                                       : {token, increment}.
-\-\-                                                       : {token, decrement}.
+\+\+                                                       : {token, {increment, TokenLine}}.
+\-\-                                                       : {token, {decrement, TokenLine}}.
 {SYMBOL}                                                   : {token, {list_to_atom(TokenChars), TokenLine}}.
 
 Erlang code.
@@ -82,9 +82,8 @@ Erlang code.
 %% FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 %% OTHER DEALINGS IN THE SOFTWARE.
 %%
-%% @doc Lexical analysis for Protocol Buffers definitions
-%% Field types
 -define(TYPE, ["map", "set", "register", "counter"]).
+-define(TYPEMAP, [{"map", "riak_dt_multi"}, {"set", "riak_dt_vvorset"}, {"register", "undefined"}, {"counter","riak_dt_pncounter"}]).
 
 %% Other keywords
 -define(KEYWORD, ["keys", "values", "count", "type"]).
@@ -93,8 +92,12 @@ Erlang code.
 
 %% Flip through the reserved words and create tokens of the proper type.
 select_id_type(T, Line) ->
-    select_id_type(T, Line, [{type, ?TYPE},
-                             {keyword, ?KEYWORD}]).
+    Mapped = select_id_type(T, Line, [{type, ?TYPE},
+                             {keyword, ?KEYWORD}]),
+    case proplists:lookup(Mapped, ?TYPEMAP) of
+      none -> Mapped;
+      V    -> V
+    end.
 
 %% When none of the keywords match, it's a regular identifier
 select_id_type(T, Line, []) ->
