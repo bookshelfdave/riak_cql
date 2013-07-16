@@ -49,6 +49,8 @@ Rules.
 \"([^\"]|\\\")*\"                                          : {token, {string, TokenLine, unquote(TokenChars)}}.
 \'([^\']|\\\')*\'                                          : {token, {string, TokenLine, unquote(TokenChars)}}.
 (0|{SIGN}?[1-9]{DIGIT}*)                                   : {token, {integer, TokenLine, list_to_integer(TokenChars)}}.
+\+\+                                                       : {token, increment}.
+\-\-                                                       : {token, decrement}.
 {SYMBOL}                                                   : {token, {list_to_atom(TokenChars), TokenLine}}.
 
 Erlang code.
