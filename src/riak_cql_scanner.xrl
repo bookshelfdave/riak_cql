@@ -83,7 +83,7 @@ Erlang code.
 %% OTHER DEALINGS IN THE SOFTWARE.
 %%
 -define(TYPE, ["map", "set", "register", "counter"]).
--define(TYPEMAP, [{"map", "riak_dt_multi"}, {"set", "riak_dt_vvorset"}, {"register", "undefined"}, {"counter","riak_dt_pncounter"}]).
+-define(TYPEMAP, [{map, riak_dt_multi}, {set, riak_dt_vvorset}, {register, undefined}, {counter,riak_dt_pncounter}]).
 
 %% Other keywords
 -define(KEYWORD, ["keys", "values", "count", "type"]).
@@ -92,12 +92,14 @@ Erlang code.
 
 %% Flip through the reserved words and create tokens of the proper type.
 select_id_type(T, Line) ->
-    Mapped = select_id_type(T, Line, [{type, ?TYPE},
+    {X,Y,Mapped} = select_id_type(T, Line, [{type, ?TYPE},
                              {keyword, ?KEYWORD}]),
+    %% stupid hack as I don't want to refactor this yet
     case proplists:lookup(Mapped, ?TYPEMAP) of
-      none -> Mapped;
-      V    -> V
+      none -> {X,Y,Mapped};
+      {_,V}    -> {X, Y, V}
     end.
+
 
 %% When none of the keywords match, it's a regular identifier
 select_id_type(T, Line, []) ->
