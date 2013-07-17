@@ -29,15 +29,15 @@ Nonterminals
 
 Terminals
     '{' '}' ','
-    type identifier increment decrement
+    type identifier inc dec integer
     .
 
-Rootsymbol commands.
+Rootsymbol command.
 commands -> command : ['$1'].
 commands -> command ',' commands : ['$1' | '$3'].
 command -> scope : {update, '$1'}.
-command -> type identifier increment : {update, {unpack('$2'), unpack('$1')}, {increment, 1}}.
-command -> type identifier decrement: {update, {unpack('$2'), unpack('$1')}, {decrement, 1}}.
+command -> type identifier inc integer: {update, {map_type(unpack('$2')), unpack('$1')}, {increment, $4}}.
+command -> type identifier dec integer: {update, {map_type(unpack('$2')), unpack('$1')}, {decrement, $4}}.
 scope -> '{' commands '}' : '$2'.
 
 Erlang code.
@@ -66,7 +66,15 @@ Erlang code.
 %% OTHER DEALINGS IN THE SOFTWARE.
 %%
 
--export([file/1, main/1, string/1]).
+-export([file/1, main/1, string/1, map_type/1]).
+-define(TYPEMAP, [{map, riak_dt_multi}, {set, riak_dt_vvorset}, {register, undefined}, {counter,riak_dt_pncounter}]).
+
+map_type(T) ->
+  io:format(">>>>>~p<<<~n", [T]),
+  case proplists:lookup(T, ?TYPEMAP) of
+    none -> undefined_type;
+    {_K, V} -> V
+  end.
 
 unpack({_,_,V}) -> V.
 

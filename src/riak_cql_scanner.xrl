@@ -45,12 +45,11 @@ Rules.
 #.*({EOL}+|)                                               : skip_token.  %% sh-style comments
 //.*({EOL}+|)                                              : skip_token.  %% C style single-line comments
 /\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+/                  : skip_token.  %% C-style block comments
+\${LETTER}+                                                : {token, {meta, TokenChars, TokenLine}}.
 {LETTER}{ALNUM}*                                           : {token, select_id_type(TokenChars, TokenLine)}.
 \"([^\"]|\\\")*\"                                          : {token, {string, TokenLine, unquote(TokenChars)}}.
 \'([^\']|\\\')*\'                                          : {token, {string, TokenLine, unquote(TokenChars)}}.
 (0|{SIGN}?[1-9]{DIGIT}*)                                   : {token, {integer, TokenLine, list_to_integer(TokenChars)}}.
-\+\+                                                       : {token, {increment, TokenLine}}.
-\-\-                                                       : {token, {decrement, TokenLine}}.
 {SYMBOL}                                                   : {token, {list_to_atom(TokenChars), TokenLine}}.
 
 Erlang code.
@@ -83,23 +82,17 @@ Erlang code.
 %% OTHER DEALINGS IN THE SOFTWARE.
 %%
 -define(TYPE, ["map", "set", "register", "counter"]).
--define(TYPEMAP, [{map, riak_dt_multi}, {set, riak_dt_vvorset}, {register, undefined}, {counter,riak_dt_pncounter}]).
 
 %% Other keywords
--define(KEYWORD, ["keys", "values", "count", "type"]).
+-define(KEYWORD, [keys, values, count, type, inc, dec]).
 
 -export([file/1, main/1]).
 
 %% Flip through the reserved words and create tokens of the proper type.
 select_id_type(T, Line) ->
-    {X,Y,Mapped} = select_id_type(T, Line, [{type, ?TYPE},
-                             {keyword, ?KEYWORD}]),
-    %% stupid hack as I don't want to refactor this yet
-    case proplists:lookup(Mapped, ?TYPEMAP) of
-      none -> {X,Y,Mapped};
-      {_,V}    -> {X, Y, V}
-    end.
-
+    io:format(user, ">>>~p<<<~n", [T]),
+    select_id_type(T, Line, [{type, ?TYPE},
+                             {keyword, ?KEYWORD}]).
 
 %% When none of the keywords match, it's a regular identifier
 select_id_type(T, Line, []) ->
@@ -109,6 +102,13 @@ select_id_type(T, Line, [{keyword, K}|Rest]) ->
     case lists:member(T, K) of
         true ->
             {list_to_atom(T), Line};
+        false ->
+            select_id_type(T, Line, Rest)
+    end;
+select_id_type(T, Line, [{type, K}|Rest]) ->
+    case lists:member(T, K) of
+        true ->
+            {list_to_atom(unquote(T)), Line};
         false ->
             select_id_type(T, Line, Rest)
     end;
